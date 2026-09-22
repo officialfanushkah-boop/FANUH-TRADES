@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FANUH Trades</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0F1A;
+    --panel:#10182A;
+    --panel-raised:#161F38;
+    --hairline:#232D4B;
+    --hairline-soft:#1A2340;
+    --text:#EDEFF5;
+    --text-dim:#8993AC;
+    --text-faint:#57607F;
+    --gold:#D4A64C;
+    --gold-dim:rgba(212,166,76,0.14);
+    --gain:#4FB88F;
+    --gain-dim:rgba(79,184,143,0.13);
+    --loss:#D9614F;
+    --loss-dim:rgba(217,97,79,0.13);
+    --radius-s:3px;
+    --radius-m:5px;
+    --font-display:'Fraunces', Georgia, 'Times New Roman', serif;
+    --font-body:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  html{ scroll-padding-top:env(safe-area-inset-top,0px); }
+  body{ background:var(--bg); }
+
+  ::selection{ background:var(--gold-dim); color:var(--gold); }
+
+  button{ font-family:inherit; cursor:pointer; }
+  input{ font-family:inherit; }
+
+  .tabular{ font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; }
+
+  .app{
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+  }
+
+  /* ---------- Masthead ---------- */
+  .masthead{
+    display:flex;
+    align-items:center;
+    gap:28px;
+    padding:0 20px;
+    height:56px;
+    flex:0 0 auto;
+    border-bottom:1px solid var(--hairline);
+    background:var(--panel);
+    padding-top:calc(env(safe-area-inset-top,0px));
+    animation:mastheadIn .5s ease both;
+  }
+  @keyframes mastheadIn{
+    from{ opacity:0; transform:translateY(-6px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .brand{
+    font-family:var(--font-display);
+    font-weight:900;
+    font-size:19px;
+    letter-spacing:0.01em;
+    white-space:nowrap;
+    color:var(--text);
+    flex:0 0 auto;
+  }
+  .brand span{ color:var(--gold); font-weight:600; font-style:italic; }
+
+  .ticker-tape{
+    flex:1 1 auto;
+    overflow:hidden;
+    position:relative;
+    mask-image:linear-gradient(90deg, transparent, black 24px, black calc(100% - 24px), transparent);
+    -webkit-mask-image:linear-gradient(90deg, transparent, black 24px, black calc(100% - 24px), transparent);
+    height:100%;
+    display:flex;
+    align-items:center;
+  }
+  .ticker-track{
+    display:flex;
+    gap:26px;
+    white-space:nowrap;
+    animation:scrollTape 38s linear infinite;
+    will-change:transform;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .ticker-track{ animation:none; }
+  }
+  @keyframes scrollTape{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(-50%); }
+  }
+  .tick-item{ font-size:12.5px; color:var(--text-dim); display:inline-flex; gap:7px; align-items:baseline; }
+  .tick-item b{ color:var(--text); font-weight:600; }
+  .tick-item .up{ color:var(--gain); }
+  .tick-item .down{ color:var(--loss); }
+
+  .account{ flex:0 0 auto; display:flex; align-items:center; gap:14px; }
+  .balance{ text-align:right; line-height:1.25; }
+  .balance .label{ display:block; font-size:10.5px; color:var(--text-faint); text-transform:none; }
+  .balance .value{ display:block; font-size:14px; font-weight:600; }
+  .avatar{
+    width:30px; height:30px; border-radius:50%;
+    background:var(--gold-dim); color:var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    font-size:11.5px; font-weight:700; border:1px solid var(--hairline);
+    flex:0 0 auto;
+  }
+
+  /* ---------- Workspace grid ---------- */
+  .workspace{
+    flex:1 1 auto;
+    display:grid;
+    grid-template-columns:220px 1fr 300px;
+    min-height:0;
+  }
+
+  aside.watchlist{
+    border-right:1px solid var(--hairline);
+    background:var(--panel);
+    display:flex; flex-direction:column;
+    min-height:0;
+  }
+  .panel-title{
+    font-size:11px; color:var(--text-faint);
+    padding:14px 14px 8px;
+    letter-spacing:0.02em;
+  }
+  .wl-rows{ overflow-y:auto; flex:1 1 auto; }
+  .wl-row{
+    display:flex; align-items:center; gap:10px;
+    padding:9px 14px;
+    cursor:pointer;
+    border-left:2px solid transparent;
+    transition:background .12s ease;
+  }
+  .wl-row:hover{ background:var(--panel-raised); }
+  .wl-row.active{ background:var(--panel-raised); border-left-color:var(--gold); }
+  .wl-symbol{ font-weight:600; font-size:13px; width:48px; flex:0 0 auto; }
+  .wl-spark{ flex:0 0 auto; width:54px; height:22px; }
+  .wl-price-col{ margin-left:auto; text-align:right; }
+  .wl-price{ font-size:12.5px; }
+  .wl-change{ font-size:11px; }
+
+  main.market{
+    display:flex; flex-direction:column;
+    min-width:0; min-height:0;
+    border-right:1px solid var(--hairline);
+  }
+
+  .instrument-header{
+    display:flex; align-items:center; gap:22px;
+    padding:14px 20px;
+    border-bottom:1px solid var(--hairline);
+    flex-wrap:wrap;
+  }
+  .instrument-id .symbol{ font-family:var(--font-display); font-size:20px; font-weight:600; }
+  .instrument-id .name{ font-size:11.5px; color:var(--text-dim); }
+  .price-block{ margin-left:6px; }
+  .price-block .price{ font-size:24px; font-weight:600; transition:color .25s ease; }
+  .price-block .change{ font-size:12px; }
+  .up-color{ color:var(--gain); }
+  .down-color{ color:var(--loss); }
+  .timeframes{ margin-left:auto; display:flex; gap:2px; background:var(--panel-raised); padding:3px; border-radius:var(--radius-m); }
+  .timeframes button{
+    border:none; background:transparent; color:var(--text-dim);
+    font-size:12px; padding:5px 10px; border-radius:var(--radius-s);
+  }
+  .timeframes button.active{ background:var(--bg); color:var(--gold); }
+
+  .chart-wrap{ position:relative; flex:1 1 auto; min-height:260px; }
+  #chart{ width:100%; height:100%; display:block; }
+  .chart-crosshair-readout{
+    position:absolute; top:10px; left:16px;
+    font-size:11.5px; color:var(--text-dim);
+    background:rgba(16,24,42,0.85); border:1px solid var(--hairline);
+    padding:6px 10px; border-radius:var(--radius-s);
+    pointer-events:none; display:none; line-height:1.5;
+  }
+  .chart-crosshair-readout b{ color:var(--text); }
+
+  .lower-tabs{ border-top:1px solid var(--hairline); flex:0 0 220px; display:flex; flex-direction:column; min-height:0; }
+  .tab-strip{ display:flex; gap:2px; padding:8px 14px 0; }
+  .tab-strip .tab{
+    border:none; background:transparent; color:var(--text-dim);
+    font-size:12px; padding:6px 12px; border-bottom:2px solid transparent;
+  }
+  .tab-strip .tab.active{ color:var(--text); border-bottom-color:var(--gold); }
+  .tab-panels{ flex:1 1 auto; overflow-y:auto; padding:6px 14px 14px; }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  table.data-table{ width:100%; border-collapse:collapse; font-size:12px; }
+  table.data-table th{ text-align:left; color:var(--text-faint); font-weight:500; font-size:10.5px; padding:5px 6px; border-bottom:1px solid var(--hairline-soft); position:sticky; top:0; background:var(--bg); }
+  table.data-table td{ padding:5px 6px; border-bottom:1px solid var(--hairline-soft); }
+  table.data-table td.right, table.data-table th.right{ text-align:right; }
+
+  .ob-row{ position:relative; display:grid; grid-template-columns:1fr 1fr 1fr; font-size:12px; padding:2px 6px; }
+  .ob-row .bar{ position:absolute; top:0; bottom:0; z-index:0; }
+  .ob-row span{ position:relative; z-index:1; }
+  .ob-bid .bar{ right:0; background:var(--gain-dim); }
+  .ob-ask .bar{ left:0; background:var(--loss-dim); }
+  .ob-mid{ text-align:center; padding:6px 0; font-size:12.5px; color:var(--gold); border-top:1px solid var(--hairline-soft); border-bottom:1px solid var(--hairline-soft); margin:4px 0; }
+
+  aside.ticket{
+    padding:16px; display:flex; flex-direction:column; gap:12px;
+    background:var(--panel);
+  }
+  .ticket-tabs{ display:flex; gap:2px; background:var(--panel-raised); padding:3px; border-radius:var(--radius-m); }
+  .side-btn{ flex:1; border:none; background:transparent; color:var(--text-dim); padding:8px; border-radius:var(--radius-s); font-size:13px; font-weight:600; }
+  .side-btn.buy.active{ background:var(--gain-dim); color:var(--gain); }
+  .side-btn.sell.active{ background:var(--loss-dim); color:var(--loss); }
+
+  .order-type-row{ display:flex; gap:14px; }
+  .type-btn{ border:none; background:transparent; color:var(--text-faint); font-size:12px; padding:2px 0; border-bottom:2px solid transparent; }
+  .type-btn.active{ color:var(--text); border-bottom-color:var(--gold); }
+
+  .field{ display:flex; flex-direction:column; gap:6px; font-size:11.5px; color:var(--text-dim); }
+  .field input{
+    background:var(--panel-raised); border:1px solid var(--hairline); color:var(--text);
+    padding:9px 10px; border-radius:var(--radius-m); font-size:14px;
+  }
+  .field input:focus{ outline:2px solid var(--gold); outline-offset:1px; border-color:var(--gold); }
+
+  .estimate{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-dim); padding-top:2px; }
+  .estimate span:last-child{ color:var(--text); font-weight:600; }
+
+  .submit-btn{
+    border:none; padding:12px; border-radius:var(--radius-m); font-size:14px; font-weight:700;
+    color:#0B0F1A;
+  }
+  .submit-btn.buy{ background:var(--gain); }
+  .submit-btn.sell{ background:var(--loss); }
+  .submit-btn:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+
+  .confirm-toast{
+    font-size:12px; text-align:center; color:var(--gain);
+    opacity:0; transform:translateY(4px);
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  .confirm-toast.show{ opacity:1; transform:translateY(0); }
+
+  .flash-up{ animation:flashUp .5s ease; }
+  .flash-down{ animation:flashDown .5s ease; }
+  @keyframes flashUp{ 0%{ background:var(--gain-dim); } 100%{ background:transparent; } }
+  @keyframes flashDown{ 0%{ background:var(--loss-dim); } 100%{ background:transparent; } }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:980px){
+    .workspace{ grid-template-columns:1fr; grid-template-rows:auto auto 1fr; }
+    aside.watchlist{
+      border-right:none; border-bottom:1px solid var(--hairline);
+      flex-direction:row; align-items:center; height:64px;
+    }
+    .wl-rows{ display:flex; overflow-x:auto; overflow-y:hidden; }
+    .wl-row{ flex:0 0 auto; border-left:none; border-bottom:2px solid transparent; }
+    .wl-row.active{ border-bottom-color:var(--gold); border-left-color:transparent; }
+    .panel-title{ display:none; }
+    main.market{ border-right:none; order:2; }
+    aside.ticket{ order:3; border-top:1px solid var(--hairline); }
+  }
+
+  ::-webkit-scrollbar{ width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb{ background:var(--hairline); border-radius:6px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="masthead">
+    <div class="brand">FANUH <span>Trades</span></div>
+    <div class="ticker-tape">
+      <div class="ticker-track" id="tickerTrack"></div>
+    </div>
+    <div class="account">
+      <div class="balance">
+        <span class="label">Buying power</span>
+        <span class="value tabular" id="buyingPower">$48,250.12</span>
+      </div>
+      <div class="avatar">FN</div>
+    </div>
+  </header>
+
+  <div class="workspace">
+
+    <aside class="watchlist">
+      <div class="panel-title">Watchlist</div>
+      <div class="wl-rows" id="wlRows"></div>
+    </aside>
+
+    <main class="market">
+      <div class="instrument-header">
+        <div class="instrument-id">
+          <div class="symbol" id="curSymbol">FNH</div>
+          <div class="name" id="curName">Fanuh Holdings Inc.</div>
+        </div>
+        <div class="price-block">
+          <div class="price tabular" id="curPrice">128.40</div>
+          <div class="change tabular" id="curChange">+0.00 (0.00%)</div>
+        </div>
+        <div class="timeframes" id="timeframes">
+          <button data-tf="1D" class="active">1D</button>
+          <button data-tf="1W">1W</button>
+          <button data-tf="1M">1M</button>
+          <button data-tf="3M">3M</button>
+          <button data-tf="1Y">1Y</button>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="chart"></canvas>
+        <div class="chart-crosshair-readout" id="crosshair"></div>
+      </div>
+
+      <div class="lower-tabs">
+        <div class="tab-strip" id="tabStrip">
+          <button class="tab active" data-tab="orderbook">Order book</button>
+          <button class="tab" data-tab="trades">Trade tape</button>
+          <button class="tab" data-tab="positions">Positions</button>
+          <button class="tab" data-tab="orders">Orders</button>
+        </div>
+        <div class="tab-panels">
+          <div class="tab-panel active" id="panel-orderbook">
+            <div id="obAsks"></div>
+            <div class="ob-mid tabular" id="obMid">128.40</div>
+            <div id="obBids"></div>
+          </div>
+          <div class="tab-panel" id="panel-trades">
+            <table class="data-table">
+              <thead><tr><th>Time</th><th class="right">Price</th><th class="right">Qty</th></tr></thead>
+              <tbody id="tapeBody"></tbody>
+            </table>
+          </div>
+          <div class="tab-panel" id="panel-positions">
+            <table class="data-table">
+              <thead><tr><th>Symbol</th><th class="right">Qty</th><th class="right">Avg cost</th><th class="right">Mkt price</th><th class="right">P&amp;L</th></tr></thead>
+              <tbody id="positionsBody"></tbody>
+            </table>
+          </div>
+          <div class="tab-panel" id="panel-orders">
+            <table class="data-table">
+              <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th class="right">Qty</th><th class="right">Price</th><th>Status</th></tr></thead>
+              <tbody id="ordersBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="ticket">
+      <div class="ticket-tabs">
+        <button class="side-btn buy active" data-side="buy">Buy</button>
+        <button class="side-btn sell" data-side="sell">Sell</button>
+      </div>
+      <div class="order-type-row">
+        <button class="type-btn active" data-type="market">Market</button>
+        <button class="type-btn" data-type="limit">Limit</button>
+      </div>
+      <label class="field">
+        <span>Quantity</span>
+        <input type="number" id="qtyInput" min="1" step="1" value="10">
+      </label>
+      <label class="field" id="limitPriceField" style="display:none">
+        <span>Limit price</span>
+        <input type="number" id="limitPriceInput" step="0.01">
+      </label>
+      <div class="estimate">
+        <span>Est. cost</span>
+        <span class="tabular" id="estCost">$1,284.00</span>
+      </div>
+      <button class="submit-btn buy" id="submitOrder">Buy FNH</button>
+      <div class="confirm-toast" id="confirmToast">Order filled</div>
+    </aside>
+
+  </div>
+</div>
+
+<script>
+(function(){
+
+  /* ---------------- deterministic RNG per symbol ---------------- */
+  function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0; } return Math.abs(h); }
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* ---------------- instruments ---------------- */
+  const SYMBOLS = [
+    { sym:'FNH',  name:'Fanuh Holdings Inc.',   base:128.40, vol:0.012 },
+    { sym:'AURX', name:'Aurex Metals Co.',      base:64.15,  vol:0.018 },
+    { sym:'VNTR', name:'Ventura Robotics',      base:812.60, vol:0.020 },
+    { sym:'BLKP', name:'Blackpine Energy',      base:41.28,  vol:0.015 },
+    { sym:'CRSD', name:'Crossroad Biotech',     base:15.62,  vol:0.032 },
+    { sym:'HLIX', name:'Helix Semiconductor',   base:342.90, vol:0.022 },
+  ];
+  const TF_BARS = { '1D':60, '1W':56, '1M':44, '3M':40, '1Y':52 };
+
+  const state = {
+    current: 'FNH',
+    timeframe: '1D',
+    series: {},
+    live: {},
+    side: 'buy',
+    orderType: 'market',
+    balance: 48250.12,
+    orders: [],
+    positions: [
+      { sym:'VNTR', qty:6,  avg:790.10 },
+      { sym:'AURX', qty:120, avg:59.40 },
+      { sym:'HLIX', qty:14, avg:355.75 },
+    ]
+  };
+
+  function fmt(n, d){ return n.toLocaleString('en-US',{minimumFractionDigits:d===undefined?2:d, maximumFractionDigits:d===undefined?2:d}); }
+  function fmtMoney(n){ return '$' + fmt(n,2); }
+
+  /* ---------------- synthetic OHLC generation ---------------- */
+  function genSeries(symbolObj, tf){
+    const n = TF_BARS[tf];
+    const rand = mulberry32(hashStr(symbolObj.sym + tf));
+    let price = symbolObj.base * (0.9 + rand()*0.2);
+    const bars = [];
+    const vol = symbolObj.vol;
+    for(let i=0;i<n;i++){
+      const drift = (rand()-0.5) * vol * price;
+      const open = price;
+      const close = Math.max(0.5, open + drift);
+      const high = Math.max(open, close) + rand()*vol*price*0.6;
+      const low = Math.max(0.2, Math.min(open, close) - rand()*vol*price*0.6);
+      const volume = Math.round(2000 + rand()*8000);
+      bars.push({ o:open, h:high, l:low, c:close, v:volume, i:i });
+      price = close;
+    }
+    return bars;
+  }
+
+  function getSeries(sym, tf){
+    const symObj = SYMBOLS.find(s=>s.sym===sym);
+    state.series[sym] = state.series[sym] || {};
+    if(!state.series[sym][tf]) state.series[sym][tf] = genSeries(symObj, tf);
+    return state.series[sym][tf];
+  }
+
+  SYMBOLS.forEach(s=>{
+    const bars = getSeries(s.sym, '1D');
+    state.live[s.sym] = bars[bars.length-1].c;
+  });
+
+  /* ---------------- watchlist ---------------- */
+  const wlRows = document.getElementById('wlRows');
+
+  function sparklinePath(bars, w, h){
+    const closes = bars.map(b=>b.c);
+    const min = Math.min(...closes), max = Math.max(...closes);
+    const range = (max-min) || 1;
+    return closes.map((c,i)=>{
+      const x = (i/(closes.length-1)) * w;
+      const y = h - ((c-min)/range) * h;
+      return (i===0?'M':'L') + x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+  }
+
+  function renderWatchlist(){
+    wlRows.innerHTML = '';
+    SYMBOLS.forEach(s=>{
+      const bars = getSeries(s.sym, '1D');
+      const first = bars[0].o;
+      const last = state.live[s.sym];
+      const chg = last - first;
+      const pct = (chg/first)*100;
+      const up = chg >= 0;
+      const row = document.createElement('div');
+      row.className = 'wl-row' + (s.sym===state.current ? ' active' : '');
+      row.dataset.sym = s.sym;
+      row.innerHTML = `
+        <span class="wl-symbol">${s.sym}</span>
+        <svg class="wl-spark" viewBox="0 0 54 22" preserveAspectRatio="none">
+          <path d="${sparklinePath(bars,54,22)}" fill="none" stroke="${up?'#4FB88F':'#D9614F'}" stroke-width="1.4"/>
+        </svg>
+        <span class="wl-price-col">
+          <span class="wl-price tabular">${fmt(last, last<20?3:2)}</span><br/>
+          <span class="wl-change tabular ${up?'up-color':'down-color'}">${up?'+':''}${fmt(pct,2)}%</span>
+        </span>`;
+      row.addEventListener('click', ()=> selectSymbol(s.sym));
+      wlRows.appendChild(row);
+    });
+  }
+
+  /* ---------------- ticker tape ---------------- */
+  function renderTicker(){
+    const track = document.getElementById('tickerTrack');
+    const items = SYMBOLS.map(s=>{
+      const bars = getSeries(s.sym,'1D');
+      const chg = state.live[s.sym]-bars[0].o;
+      const pct = (chg/bars[0].o)*100;
+      const up = chg>=0;
+      return `<span class="tick-item"><b>${s.sym}</b> ${fmt(state.live[s.sym], state.live[s.sym]<20?3:2)} <span class="${up?'up':'down'}">${up?'▲':'▼'} ${fmt(Math.abs(pct),2)}%</span></span>`;
+    }).join('');
+    track.innerHTML = items + items;
+  }
+
+  /* ---------------- chart ---------------- */
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+  const crosshair = document.getElementById('crosshair');
+  let dpr = Math.max(1, window.devicePixelRatio || 1);
+
+  function resizeCanvas(){
+    const rect = canvas.parentElement.getBoundingClientRect();
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    drawChart();
+  }
+
+  function drawChart(){
+    const bars = getSeries(state.current, state.timeframe);
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    ctx.scale(dpr,dpr);
+    const w = W/dpr, h = H/dpr;
+
+    const padL = 8, padR = 54, padT = 14, padB = 18;
+    const volH = h * 0.18;
+    const priceH = h - padT - padB - volH - 8;
+
+    const highs = bars.map(b=>b.h), lows = bars.map(b=>b.l);
+    const maxP = Math.max(...highs), minP = Math.min(...lows);
+    const rangeP = (maxP - minP) || 1;
+    const maxV = Math.max(...bars.map(b=>b.v));
+
+    const plotW = w - padL - padR;
+    const barSlot = plotW / bars.length;
+    const bodyW = Math.max(2, barSlot*0.55);
+
+    ctx.strokeStyle = '#1A2340';
+    ctx.fillStyle = '#57607F';
+    ctx.font = '10.5px Inter, sans-serif';
+    ctx.textBaseline = 'middle';
+    const gridLines = 4;
+    for(let i=0;i<=gridLines;i++){
+      const y = padT + (priceH/gridLines)*i;
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(w-padR, y);
+      ctx.globalAlpha = 0.6;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      const priceAtY = maxP - (rangeP/gridLines)*i;
+      ctx.fillText(priceAtY.toFixed(priceAtY<20?3:2), w-padR+6, y);
+    }
+
+    bars.forEach((b,i)=>{
+      const x = padL + i*barSlot + barSlot/2;
+      const yO = padT + (1-(b.o-minP)/rangeP)*priceH;
+      const yC = padT + (1-(b.c-minP)/rangeP)*priceH;
+      const yH = padT + (1-(b.h-minP)/rangeP)*priceH;
+      const yL = padT + (1-(b.l-minP)/rangeP)*priceH;
+      const up = b.c >= b.o;
+      ctx.strokeStyle = up ? '#4FB88F' : '#D9614F';
+      ctx.fillStyle = up ? '#4FB88F' : '#D9614F';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, yH); ctx.lineTo(x, yL);
+      ctx.stroke();
+      const bodyTop = Math.min(yO,yC);
+      const bodyH = Math.max(1, Math.abs(yC-yO));
+      ctx.fillRect(x-bodyW/2, bodyTop, bodyW, bodyH);
+
+      const vY = padT + priceH + 8;
+      const vh = (b.v/maxV) * volH;
+      ctx.globalAlpha = 0.55;
+      ctx.fillRect(x-bodyW/2, vY + (volH-vh), bodyW, vh);
+      ctx.globalAlpha = 1;
+    });
+
+    ctx.restore();
+    canvas._layout = { padL, padR, padT, padB, priceH, plotW, barSlot, minP, rangeP, bars, w, h };
+  }
+
+  canvas.addEventListener('mousemove', (e)=>{
+    const layout = canvas._layout;
+    if(!layout) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    let idx = Math.floor((mx - layout.padL) / layout.barSlot);
+    idx = Math.max(0, Math.min(layout.bars.length-1, idx));
+    const b = layout.bars[idx];
+    if(!b) return;
+    crosshair.style.display = 'block';
+    crosshair.innerHTML = `O <b>${b.o.toFixed(2)}</b>&nbsp; H <b>${b.h.toFixed(2)}</b>&nbsp; L <b>${b.l.toFixed(2)}</b>&nbsp; C <b>${b.c.toFixed(2)}</b>&nbsp; Vol <b>${b.v.toLocaleString()}</b>`;
+  });
+  canvas.addEventListener('mouseleave', ()=>{ crosshair.style.display = 'none'; });
+
+  window.addEventListener('resize', resizeCanvas);
+
+  /* ---------------- header / instrument switching ---------------- */
+  function updateHeader(){
+    const symObj = SYMBOLS.find(s=>s.sym===state.current);
+    const bars = getSeries(state.current, state.timeframe);
+    const last = state.live[state.current];
+    const first = bars[0].o;
+    const chg = last - first;
+    const pct = (chg/first)*100;
+    const up = chg>=0;
+
+    document.getElementById('curSymbol').textContent = symObj.sym;
+    document.getElementById('curName').textContent = symObj.name;
+    const priceEl = document.getElementById('curPrice');
+    priceEl.textContent = fmt(last, last<20?3:2);
+    priceEl.className = 'price tabular ' + (up?'up-color':'down-color');
+    const changeEl = document.getElementById('curChange');
+    changeEl.textContent = `${up?'+':''}${fmt(chg,2)} (${up?'+':''}${fmt(pct,2)}%)`;
+    changeEl.className = 'change tabular ' + (up?'up-color':'down-color');
+
+    document.getElementById('submitOrder').textContent =
+      (state.side==='buy'?'Buy ':'Sell ') + symObj.sym;
+
+    document.getElementById('obMid').textContent = fmt(last, last<20?3:2);
+  }
+
+  function selectSymbol(sym){
+    state.current = sym;
+    renderWatchlist();
+    updateHeader();
+    drawChart();
+    renderOrderBook();
+    updateEstimate();
+  }
+
+  document.getElementById('timeframes').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-tf]');
+    if(!btn) return;
+    document.querySelectorAll('#timeframes button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.timeframe = btn.dataset.tf;
+    drawChart();
+  });
+
+  /* ---------------- lower tabs ---------------- */
+  document.getElementById('tabStrip').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-tab]');
+    if(!btn) return;
+    document.querySelectorAll('.tab-strip .tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+
+  /* ---------------- order book ---------------- */
+  function renderOrderBook(){
+    const last = state.live[state.current];
+    const asksEl = document.getElementById('obAsks');
+    const bidsEl = document.getElementById('obBids');
+    let asksHtml = '', bidsHtml = '';
+    const levels = 8;
+    const sizes = [];
+    for(let i=0;i<levels*2;i++) sizes.push(20 + Math.random()*400);
+    const maxSize = Math.max(...sizes);
+
+    let asks = [];
+    for(let i=levels;i>=1;i--){
+      const price = last + i*(last*0.0006);
+      const size = sizes[i-1];
+      asks.push({price,size});
+    }
+    asks.forEach(a=>{
+      const pct = (a.size/maxSize)*100;
+      asksHtml += `<div class="ob-row ob-ask"><div class="bar" style="width:${pct}%"></div>
+        <span class="tabular down-color">${fmt(a.price, a.price<20?3:2)}</span>
+        <span class="tabular" style="text-align:center">${a.size.toFixed(0)}</span><span></span></div>`;
+    });
+    let bids = [];
+    for(let i=1;i<=levels;i++){
+      const price = last - i*(last*0.0006);
+      const size = sizes[levels+i-1];
+      bids.push({price,size});
+    }
+    bids.forEach(b=>{
+      const pct = (b.size/maxSize)*100;
+      bidsHtml += `<div class="ob-row ob-bid"><span></span>
+        <span class="tabular" style="text-align:center">${b.size.toFixed(0)}</span>
+        <span class="tabular up-color" style="text-align:right">${fmt(b.price, b.price<20?3:2)}</span>
+        <div class="bar" style="width:${pct}%"></div></div>`;
+    });
+    asksEl.innerHTML = asksHtml;
+    bidsEl.innerHTML = bidsHtml;
+
+    [...asksEl.querySelectorAll('.ob-row'), ...bidsEl.querySelectorAll('.ob-row')].forEach((row)=>{
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', ()=>{
+        const priceText = row.querySelector('.tabular').textContent;
+        document.getElementById('limitPriceInput').value = priceText;
+        setOrderType('limit');
+        updateEstimate();
+      });
+    });
+  }
+
+  /* ---------------- trade tape ---------------- */
+  const tapeBody = document.getElementById('tapeBody');
+  function pushTrade(sym, price){
+    if(sym !== state.current) return;
+    const row = document.createElement('tr');
+    const now = new Date();
+    const time = now.toLocaleTimeString('en-US',{hour12:false});
+    const qty = Math.round(1 + Math.random()*40);
+    row.innerHTML = `<td>${time}</td><td class="right tabular">${fmt(price, price<20?3:2)}</td><td class="right tabular">${qty}</td>`;
+    tapeBody.insertBefore(row, tapeBody.firstChild);
+    while(tapeBody.children.length > 20) tapeBody.removeChild(tapeBody.lastChild);
+  }
+
+  /* ---------------- positions ---------------- */
+  function renderPositions(){
+    const body = document.getElementById('positionsBody');
+    body.innerHTML = '';
+    state.positions.forEach(p=>{
+      const mkt = state.live[p.sym];
+      const pnl = (mkt - p.avg) * p.qty;
+      const up = pnl >= 0;
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${p.sym}</td><td class="right tabular">${p.qty}</td>
+        <td class="right tabular">${fmt(p.avg,2)}</td>
+        <td class="right tabular">${fmt(mkt, mkt<20?3:2)}</td>
+        <td class="right tabular ${up?'up-color':'down-color'}">${up?'+':''}${fmt(pnl,2)}</td>`;
+      body.appendChild(row);
+    });
+  }
+
+  /* ---------------- ticket ---------------- */
+  const qtyInput = document.getElementById('qtyInput');
+  const limitPriceInput = document.getElementById('limitPriceInput');
+  const limitPriceField = document.getElementById('limitPriceField');
+  const estCost = document.getElementById('estCost');
+  const submitBtn = document.getElementById('submitOrder');
+  const confirmToast = document.getElementById('confirmToast');
+
+  function setSide(side){
+    state.side = side;
+    document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelector(`.side-btn.${side}`).classList.add('active');
+    submitBtn.className = 'submit-btn ' + side;
+    updateHeader();
+  }
+  document.querySelector('.side-btn.buy').addEventListener('click', ()=>setSide('buy'));
+  document.querySelector('.side-btn.sell').addEventListener('click', ()=>setSide('sell'));
+
+  function setOrderType(type){
+    state.orderType = type;
+    document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelector(`.type-btn[data-type="${type}"]`).classList.add('active');
+    limitPriceField.style.display = type==='limit' ? 'flex' : 'none';
+    if(type==='limit' && !limitPriceInput.value){
+      limitPriceInput.value = state.live[state.current].toFixed(2);
+    }
+  }
+  document.querySelector('.type-btn[data-type="market"]').addEventListener('click', ()=>{ setOrderType('market'); updateEstimate(); });
+  document.querySelector('.type-btn[data-type="limit"]').addEventListener('click', ()=>{ setOrderType('limit'); updateEstimate(); });
+
+  function updateEstimate(){
+    const qty = Math.max(0, parseFloat(qtyInput.value) || 0);
+    const price = state.orderType==='limit'
+      ? (parseFloat(limitPriceInput.value) || state.live[state.current])
+      : state.live[state.current];
+    estCost.textContent = fmtMoney(qty*price);
+  }
+  qtyInput.addEventListener('input', updateEstimate);
+  limitPriceInput.addEventListener('input', updateEstimate);
+
+  function pushOrder(sym, side, qty, price, status){
+    const body = document.getElementById('ordersBody');
+    const row = document.createElement('tr');
+    const time = new Date().toLocaleTimeString('en-US',{hour12:false});
+    row.innerHTML = `<td>${time}</td><td>${sym}</td>
+      <td class="${side==='buy'?'up-color':'down-color'}">${side.toUpperCase()}</td>
+      <td class="right tabular">${qty}</td>
+      <td class="right tabular">${fmt(price, price<20?3:2)}</td>
+      <td>${status}</td>`;
+    body.insertBefore(row, body.firstChild);
+  }
+
+  submitBtn.addEventListener('click', ()=>{
+    const qty = Math.max(1, parseInt(qtyInput.value) || 0);
+    const symObj = SYMBOLS.find(s=>s.sym===state.current);
+    const price = state.orderType==='limit'
+      ? (parseFloat(limitPriceInput.value) || state.live[state.current])
+      : state.live[state.current];
+    const status = state.orderType==='market' ? 'Filled' : 'Open';
+    pushOrder(symObj.sym, state.side, qty, price, status);
+
+    if(status==='Filled'){
+      const cost = qty*price;
+      state.balance += state.side==='buy' ? -cost : cost;
+      document.getElementById('buyingPower').textContent = fmtMoney(state.balance);
+      confirmToast.textContent = `${state.side==='buy'?'Bought':'Sold'} ${qty} ${symObj.sym} @ ${fmt(price, price<20?3:2)}`;
+    } else {
+      confirmToast.textContent = `Limit order placed: ${state.side} ${qty} ${symObj.sym} @ ${fmt(price,2)}`;
+    }
+    confirmToast.classList.add('show');
+    setTimeout(()=> confirmToast.classList.remove('show'), 2600);
+  });
+
+  /* ---------------- live simulation ---------------- */
+  function tick(){
+    SYMBOLS.forEach(s=>{
+      const rand = Math.random();
+      const delta = (rand-0.5) * s.vol * state.live[s.sym] * 0.5;
+      state.live[s.sym] = Math.max(0.2, state.live[s.sym] + delta);
+      const bars = getSeries(s.sym, '1D');
+      const last = bars[bars.length-1];
+      last.c = state.live[s.sym];
+      last.h = Math.max(last.h, last.c);
+      last.l = Math.min(last.l, last.c);
+    });
+
+    renderWatchlist();
+    renderTicker();
+    updateHeader();
+    drawChart();
+    renderPositions();
+    updateEstimate();
+    document.getElementById('obMid').textContent = fmt(state.live[state.current], state.live[state.current]<20?3:2);
+
+    if(Math.random() < 0.7){
+      pushTrade(state.current, state.live[state.current]);
+    }
+    if(document.getElementById('panel-orderbook').classList.contains('active')){
+      renderOrderBook();
+    }
+  }
+
+  /* ---------------- init ---------------- */
+  renderWatchlist();
+  renderTicker();
+  updateHeader();
+  renderOrderBook();
+  renderPositions();
+  updateEstimate();
+  resizeCanvas();
+
+  setInterval(tick, 2200);
+  setInterval(renderTicker, 2200);
+
+})();
+</script>
+</body>
+</html>
