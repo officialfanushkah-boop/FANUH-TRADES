@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FANUH Trades</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0F1A;
+    --panel:#10182A;
+    --panel-raised:#161F38;
+    --hairline:#232D4B;
+    --hairline-soft:#1A2340;
+    --text:#EDEFF5;
+    --text-dim:#8993AC;
+    --text-faint:#57607F;
+    --gold:#D4A64C;
+    --gold-dim:rgba(212,166,76,0.14);
+    --gain:#4FB88F;
+    --gain-dim:rgba(79,184,143,0.13);
+    --loss:#D9614F;
+    --loss-dim:rgba(217,97,79,0.13);
+    --radius-s:3px;
+    --radius-m:5px;
+    --font-display:'Fraunces', Georgia, 'Times New Roman', serif;
+    --font-body:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  html{ scroll-padding-top:env(safe-area-inset-top,0px); }
+  body{ background:var(--bg); }
+
+  ::selection{ background:var(--gold-dim); color:var(--gold); }
+
+  button{ font-family:inherit; cursor:pointer; }
+  input{ font-family:inherit; }
+
+  .tabular{ font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; }
+
+  .app{
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+  }
+
+  /* ---------- Masthead ---------- */
+  .masthead{
+    display:flex;
+    align-items:center;
+    gap:28px;
+    padding:0 20px;
+    height:56px;
